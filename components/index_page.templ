@@ -1,0 +1,84 @@
+package components
+
+import "github.com/daremau/my-portfolio/internal/content"
+
+templ IndexPage(projects []content.Project) {
+	<section class="hero">
+		<div class="fade-in">
+			<p class="hero-eyebrow">Hi, I'm</p>
+			<h1>Your Name</h1>
+			<p class="hero-copy">
+				Building intelligent systems and beautiful web experiences.
+				I specialize in <span class="highlight">Web Development</span>,
+				<span class="highlight">Data Science</span>, and
+				<span class="highlight">AI Engineering</span>.
+			</p>
+			<div class="hero-actions">
+				<a href="./CV.pdf" download class="btn btn-primary">
+					<svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+					</svg>
+					Download Resume
+				</a>
+				<a href="#projects" class="btn btn-secondary">
+					View Projects
+					<svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+					</svg>
+				</a>
+			</div>
+		</div>
+	</section>
+	<section id="about" class="section">
+		<div class="fade-in">
+			<h2>About Me</h2>
+			<div class="about-grid">
+				<div class="about-text">
+					<p>
+						I'm a developer passionate about building solutions that make a difference.
+						My work spans across web development, data science, and AI engineering.
+					</p>
+					<p>
+						When I'm not coding, you'll find me exploring new technologies, contributing to
+						open source projects, or diving deep into machine learning research.
+					</p>
+				</div>
+				<div>
+					<h3 class="skills-title">Skills &amp; Technologies</h3>
+					<div class="skill-list">
+						for _, skill := range Skills() {
+							<span class="skill">{ skill }</span>
+						}
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	<section id="projects" class="section">
+		<div class="fade-in">
+			<h2>Projects</h2>
+			<div class="filters" role="tablist">
+				for i, category := range content.Categories {
+					<button
+						data-filter={ category }
+						class={ FilterClass(i) }
+						role="tab"
+						aria-selected={ AriaSelected(i) }
+					>
+						{ category }
+					</button>
+				}
+			</div>
+			<div id="projects-grid" class="project-grid">
+				for i, project := range projects {
+					<div class={ ProjectClass(i) } data-category={ project.Category }>
+						@ProjectCard(project)
+					</div>
+				}
+			</div>
+			if len(projects) == 0 {
+				<p class="empty-state">No projects yet. Check back soon!</p>
+			}
+		</div>
+	</section>
+}
