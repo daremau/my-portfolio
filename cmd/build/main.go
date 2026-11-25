@@ -36,6 +36,13 @@ func run(contentDir, publicDir, webDir, outDir string) error {
 		return err
 	}
 
+	for _, project := range projects {
+		cover := filepath.Join(publicDir, filepath.FromSlash(project.Cover))
+		if _, err := os.Stat(cover); err != nil {
+			return fmt.Errorf("%s: cover %q: %w", project.Title, project.Cover, err)
+		}
+	}
+
 	if err := os.RemoveAll(outDir); err != nil {
 		return fmt.Errorf("clean output directory: %w", err)
 	}
@@ -56,7 +63,7 @@ func run(contentDir, publicDir, webDir, outDir string) error {
 	}
 
 	page := components.Layout(
-		"Portfolio | Web Dev, Data Science & AI",
+		"Mauricio Da Re — Full-Stack Engineer",
 		components.IndexPage(projects),
 	)
 	if err := writeComponent(filepath.Join(outDir, "index.html"), page); err != nil {

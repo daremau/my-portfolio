@@ -10,60 +10,32 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/adrg/frontmatter"
 )
-
-// Categories are the project categories supported by the site.
-var Categories = []string{"Web Dev", "Data Science", "AI Engineering"}
 
 // Project is a single portfolio entry parsed from a Markdown file.
 type Project struct {
 	Title       string   `yaml:"title"`
 	Description string   `yaml:"description"`
-	Category    string   `yaml:"category"`
-	PubDate     Date     `yaml:"pubDate"`
-	Image       string   `yaml:"image"`
-	Tags        []string `yaml:"tags"`
-	Link        string   `yaml:"link"`
+	Stack       []string `yaml:"stack"`
+	Cover       string   `yaml:"cover"`
+	Repo        string   `yaml:"repo"`
+	Demo        string   `yaml:"demo"`
+	Year        int      `yaml:"year"`
+	Order       int      `yaml:"order"`
 
-	// Slug and Body are parsed from the file itself, not the front matter.
+	// Slug is derived from the file name.
 	Slug string `yaml:"-"`
-	Body string `yaml:"-"`
 }
 
-// Date accepts both YAML timestamps and "YYYY-MM-DD" strings.
-type Date struct {
-	time.Time
-}
-
-// UnmarshalYAML implements the yaml.Unmarshaler interface used by
-// gopkg.in/yaml.v2, which the frontmatter package relies on.
-func (d *Date) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	var t time.Time
-	if err := unmarshal(&t); err == nil {
-		d.Time = t
-		return nil
-	}
-
-	var raw string
-	if err := unmarshal(&raw); err != nil {
-		return fmt.Errorf("expected a date: %w", err)
-	}
-
-	for _, layout := range []string{"2006-01-02", time.RFC3339} {
-		if t, err := time.Parse(layout, raw); err == nil {
-			d.Time = t
-			return nil
-		}
-	}
-
-	return fmt.Errorf("invalid date %q (want YYYY-MM-DD)", raw)
+// StackLine joins the project's stack for display.
+func (p Project) StackLine() string {
+	return strings.Join(p.Stack, " · ")
 }
 
 // LoadDir reads every .md file in dir, validates it, and returns the projects
-// sorted newest first.
+// sorted by their display order.
 func LoadDir(dir string) ([]Project, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -84,10 +56,10 @@ func LoadDir(dir string) ([]Project, error) {
 	}
 
 	sort.SliceStable(projects, func(i, j int) bool {
-		if projects[i].PubDate.Equal(projects[j].PubDate.Time) {
+		if projects[i].Order == projects[j].Order {
 			return projects[i].Title < projects[j].Title
 		}
-		return projects[i].PubDate.After(projects[j].PubDate.Time)
+		return projects[i].Order < projects[j].Order
 	})
 
 	return projects, nil
@@ -100,13 +72,11 @@ func loadFile(path string) (Project, error) {
 	}
 
 	var project Project
-	body, err := frontmatter.Parse(bytes.NewReader(data), &project)
-	if err != nil {
+	if _, err := frontmatter.Parse(bytes.NewReader(data), &project); err != nil {
 		return Project{}, fmt.Errorf("parse %s: %w", filepath.Base(path), err)
 	}
 
 	project.Slug = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
-	project.Body = string(body)
 
 	if err := project.Validate(); err != nil {
 		return Project{}, fmt.Errorf("%s: %w", filepath.Base(path), err)
@@ -115,7 +85,7 @@ func loadFile(path string) (Project, error) {
 	return project, nil
 }
 
-// Validate checks the required fields and their formats.
+// Validate checks the fields required to render a project.
 func (p Project) Validate() error {
 	if strings.TrimSpace(p.Title) == "" {
 		return errors.New("title is required")
@@ -123,40 +93,49 @@ func (p Project) Validate() error {
 	if strings.TrimSpace(p.Description) == "" {
 		return errors.New("description is required")
 	}
-	if !isCategory(p.Category) {
-		return fmt.Errorf("unknown category %q (want one of %s)", p.Category, strings.Join(Categories, ", "))
+	if len(p.Stack) == 0 {
+		return errors.New("stack is required")
 	}
-	if p.PubDate.IsZero() {
-		return errors.New("pubDate is required")
+	for i, item := range p.Stack {
+		if strings.TrimSpace(item) == "" {
+			return fmt.Errorf("stack[%d] is empty", i)
+		}
 	}
-	if p.Link == "" {
-		return errors.New("link is required")
+	if strings.TrimSpace(p.Cover) == "" {
+		return errors.New("cover is required")
 	}
-	if err := validateLink(p.Link); err != nil {
-		return err
+	if !filepath.IsLocal(filepath.FromSlash(p.Cover)) {
+		return fmt.Errorf("cover %q must be a local path inside public/", p.Cover)
+	}
+	if p.Order <= 0 {
+		return errors.New("order must be greater than 0")
+	}
+	if p.Year != 0 && (p.Year < 1990 || p.Year > 2100) {
+		return fmt.Errorf("year %d is out of range", p.Year)
+	}
+	if p.Repo != "" {
+		if err := validateURL("repo", p.Repo); err != nil {
+			return err
+		}
+	}
+	if p.Demo != "" {
+		if err := validateURL("demo", p.Demo); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func isCategory(category string) bool {
-	for _, candidate := range Categories {
-		if category == candidate {
-			return true
-		}
-	}
-	return false
-}
-
-func validateLink(link string) error {
-	parsed, err := url.Parse(link)
+func validateURL(name, raw string) error {
+	parsed, err := url.Parse(raw)
 	if err != nil {
-		return fmt.Errorf("invalid link %q: %w", link, err)
+		return fmt.Errorf("invalid %s URL %q: %w", name, raw, err)
 	}
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return fmt.Errorf("invalid link %q: scheme must be http or https", link)
+		return fmt.Errorf("invalid %s URL %q: scheme must be http or https", name, raw)
 	}
 	if parsed.Host == "" {
-		return fmt.Errorf("invalid link %q: missing host", link)
+		return fmt.Errorf("invalid %s URL %q: missing host", name, raw)
 	}
 	return nil
 }

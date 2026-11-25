@@ -1,54 +1,83 @@
 package components
 
-import "strconv"
+import "strings"
 
-// Skills shown in the About section.
-func Skills() []string {
-	return []string{
-		"Python", "JavaScript", "TypeScript", "React", "Node.js", "PostgreSQL",
-		"TensorFlow", "PyTorch", "Pandas", "Docker", "AWS", "Git",
+const (
+	// GitHubURL is the public GitHub profile.
+	GitHubURL = "https://github.com/daremau"
+	// AllReposURL lists every public repository.
+	AllReposURL = GitHubURL + "?tab=repositories"
+	// Email is the public contact address.
+	Email = "daremau@pm.me"
+	// EmailURL is the mailto link used by the templates.
+	EmailURL = "mailto:" + Email
+)
+
+// OtherProject is a compact entry in the "More on GitHub" list.
+type OtherProject struct {
+	Name        string
+	Description string
+	URL         string
+	Language    string
+}
+
+// OtherProjects returns a few additional public repositories.
+func OtherProjects() []OtherProject {
+	return []OtherProject{
+		{
+			Name:        "Local News Summarizer",
+			Description: "Scrapes and summarizes top news from Paraguay's two largest outlets.",
+			URL:         "https://github.com/daremau/local-news-summarizer",
+			Language:    "JavaScript",
+		},
+		{
+			Name:        "Godot MCP Extended",
+			Description: "MCP server for the Godot engine: inspect, edit, validate, run, and QA games.",
+			URL:         "https://github.com/daremau/godot-mcp-extended",
+			Language:    "TypeScript",
+		},
+		{
+			Name:        "Agent Chat Share",
+			Description: "Shares an in-progress chat between coding agents.",
+			URL:         "https://github.com/daremau/agent-chat-share",
+			Language:    "Rust",
+		},
+		{
+			Name:        "SQL Data Warehouse",
+			Description: "SQL Server data warehouse with ETL, data modeling, and analytics.",
+			URL:         "https://github.com/daremau/sql-data-warehouse",
+			Language:    "T-SQL",
+		},
 	}
 }
 
-// FilterClass returns the classes for a project filter tab.
-func FilterClass(index int) string {
-	if index == 0 {
-		return "filter-btn filter-btn-active"
-	}
-	return "filter-btn"
+// SkillGroup is one row in the "Tools I use" list.
+type SkillGroup struct {
+	Label string
+	Items []string
 }
 
-// AriaSelected returns the aria-selected value for a filter tab.
-func AriaSelected(index int) string {
-	if index == 0 {
-		return "true"
-	}
-	return "false"
+// List joins a group's items for display.
+func (g SkillGroup) List() string {
+	return strings.Join(g.Items, " · ")
 }
 
-// ProjectClass returns the wrapper classes for a project card.
-func ProjectClass(index int) string {
-	return "project-item fade-in stagger-" + strconv.Itoa(index%6+1)
+// SkillGroups returns the tools grouped by area.
+func SkillGroups() []SkillGroup {
+	return []SkillGroup{
+		{Label: "Languages", Items: []string{"TypeScript", "JavaScript", "Python", "SQL"}},
+		{Label: "Frontend", Items: []string{"React", "Next.js", "Tailwind CSS"}},
+		{Label: "Backend", Items: []string{"Node.js", "NestJS", "Prisma"}},
+		{Label: "Data", Items: []string{"PostgreSQL", "Supabase", "Redis", "pgvector"}},
+		{Label: "AI / ML", Items: []string{"OpenAI", "RAG", "PyTorch", "TensorFlow", "Pandas"}},
+		{Label: "Tooling", Items: []string{"Docker", "AWS", "Git", "Playwright", "Vitest"}},
+	}
 }
 
-// LimitTags returns at most n tags.
-func LimitTags(tags []string, n int) []string {
-	if len(tags) <= n {
-		return tags
+// ProjectCardClass returns the layout class for a project card.
+func ProjectCardClass(featured bool) string {
+	if featured {
+		return "project-card project-card-featured"
 	}
-	return tags[:n]
-}
-
-// CategoryClass returns the badge classes for a project category.
-func CategoryClass(category string) string {
-	switch category {
-	case "Web Dev":
-		return "badge badge-web"
-	case "Data Science":
-		return "badge badge-data"
-	case "AI Engineering":
-		return "badge badge-ai"
-	default:
-		return "badge badge-default"
-	}
+	return "project-card"
 }
